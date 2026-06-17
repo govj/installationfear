@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Cuál es tu miedo más profundo?</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: normal;
+      letter-spacing: 0.05em;
+      text-align: center;
+      margin-bottom: 2.5rem;
+      opacity: 0.85;
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 480px;
+      height: 130px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Georgia', serif;
+      font-size: 1.1rem;
+      padding: 1rem;
+      resize: none;
+      outline: none;
+      transition: border 0.3s;
+    }
+
+    textarea:focus {
+      border-color: rgba(255,255,255,0.7);
+    }
+
+    button {
+      margin-top: 1.2rem;
+      padding: 0.8rem 2.5rem;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 4px;
+      color: #fff;
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background 0.3s, border 0.3s;
+    }
+
+    button:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    #estado {
+      margin-top: 1.2rem;
+      font-size: 0.85rem;
+      opacity: 0.5;
+      min-height: 1.2rem;
+      text-align: center;
+    }
+
+    #estado.ok  { color: #7effa0; opacity: 0.8; }
+    #estado.err { color: #ff7e7e; opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+  <h1>¿Cuál es tu miedo<br>más profundo?</h1>
+
+  <textarea id="miedo" placeholder="Escríbelo aquí..." maxlength="200"></textarea>
+  <button onclick="enviar()">Soltar el miedo</button>
+  <p id="estado"></p>
+
+  <script>
+    // ← AQUÍ pondrás la URL de tu servidor WebSocket en el Paso 2
+    const WS_URL = 'wss://TU-SERVIDOR.railway.app';
+
+    let socket;
+
+    function conectar() {
+      socket = new WebSocket(WS_URL);
+
+      socket.onopen = () => {
+        setEstado('Conectado', '');
+      };
+
+      socket.onclose = () => {
+        setEstado('Reconectando...', '');
+        setTimeout(conectar, 3000); // reintenta solo
+      };
+
+      socket.onerror = () => {
+        setEstado('Error de conexión', 'err');
+      };
+    }
+
+    function enviar() {
+      const texto = document.getElementById('miedo').value.trim();
+
+      if (!texto) {
+        setEstado('Escribe algo primero', 'err');
+        return;
+      }
+
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        setEstado('Sin conexión, espera...', 'err');
+        return;
+      }
+
+      const mensaje = JSON.stringify({ miedo: texto });
+      socket.send(mensaje);
+
+      document.getElementById('miedo').value = '';
+      setEstado('✓ Tu miedo ya flota', 'ok');
+
+      setTimeout(() => setEstado('', ''), 3000);
+    }
+
+    function setEstado(texto, clase) {
+      const el = document.getElementById('estado');
+      el.textContent = texto;
+      el.className = clase;
+    }
+
+    // Enviar también con Ctrl+Enter / Cmd+Enter
+    document.getElementById('miedo').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviar();
+    });
+
+    conectar();
+  </script>
+
+</body>
+</html>
